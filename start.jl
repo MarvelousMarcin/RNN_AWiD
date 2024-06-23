@@ -14,6 +14,6 @@ y_test = Flux.onehotbatch(test_data.targets, 0:9)
 include("./src/network/rnn_custom.jl")
 r = RNN_CUST(5, 100, 15e-3)
 
-@profview train(r, x_train, y_train)
+train(r, x_train, y_train)
 
 test(r,x_test, y_test)

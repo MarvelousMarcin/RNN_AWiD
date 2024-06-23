@@ -9,7 +9,7 @@ function build_graph(x_t1, x_t2, x_t3, x_t4, train_y, rnn_weights, rnn_recurrent
     y_hat = dense(h, dense_weights, dense_bias) |> identity
     e = cross_entropy_loss(y_hat, train_y)
 
-    return topological_sort(e), l5
+    return topological_sort(e), y_hat
 end
 
 function update_weights!(graph::Vector, lr::Float64, batch_size::Int64)
