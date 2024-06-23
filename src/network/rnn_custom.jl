@@ -7,12 +7,11 @@ mutable struct RNN_CUST
     rnn_bias
     dense_weights
     dense_bias
-    arch
 end
 
 
 # Constructor for the RNN struct
-function RNN_CUST(epochs, batch_size, learning_rate, arch)
+function RNN_CUST(epochs, batch_size, learning_rate)
     rnn_weights, rnn_recurrent_weights, rnn_bias, dense_weights, dense_bias = init_weights()
-    RNN_CUST(epochs, batch_size, learning_rate, rnn_weights, rnn_recurrent_weights, rnn_bias, dense_weights, dense_bias, arch)
+    RNN_CUST(epochs, batch_size, learning_rate, rnn_weights, rnn_recurrent_weights, rnn_bias, dense_weights, dense_bias)
 end

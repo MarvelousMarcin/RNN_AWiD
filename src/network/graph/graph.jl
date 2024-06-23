@@ -1,4 +1,4 @@
-function build_graph(x_t1, x_t2, x_t3, x_t4, train_y, rnn_weights, rnn_recurrent_weights, rnn_bias, dense_weights, dense_bias, arch)
+function build_graph(x_t1, x_t2, x_t3, x_t4, train_y, rnn_weights, rnn_recurrent_weights, rnn_bias, dense_weights, dense_bias)
     h_prev = Constant(zeros(64))  
    
     h = h_prev
