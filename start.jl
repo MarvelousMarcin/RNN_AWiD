@@ -12,7 +12,7 @@ x_test = reshape(test_data.features, 28 * 28, :)
 y_test = Flux.onehotbatch(test_data.targets, 0:9)
 
 include("./src/network/rnn_custom.jl")
-r = RNN_CUST(5, 100, 15e-3, [[rnn, tanh], [dense, identity]])
+r = RNN_CUST(5, 100, 15e-3)
 
 @profview train(r, x_train, y_train)
 
