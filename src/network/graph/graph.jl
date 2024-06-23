@@ -1,13 +1,13 @@
 function build_graph(x_t1, x_t2, x_t3, x_t4, train_y, rnn_weights, rnn_recurrent_weights, rnn_bias, dense_weights, dense_bias, arch)
     h_prev = Constant(zeros(64))  
    
-    l1 = rnn(x_t1, rnn_weights, rnn_recurrent_weights, rnn_bias, h_prev) |> tanh
-    l2 = rnn(x_t2, rnn_weights, rnn_recurrent_weights, rnn_bias, l1) |> tanh
-    l3 = rnn(x_t3, rnn_weights, rnn_recurrent_weights, rnn_bias, l2) |> tanh
-    l4 = rnn(x_t4, rnn_weights, rnn_recurrent_weights, rnn_bias, l3) |> tanh
+    h = h_prev
+    for x_t in [x_t1, x_t2, x_t3, x_t4]
+        h = rnn(x_t, rnn_weights, rnn_recurrent_weights, rnn_bias, h) |> tanh
+    end
 
-    l5 = dense(l4, dense_weights, dense_bias) |> identity
-    e = cross_entropy_loss(l5, train_y)
+    y_hat = dense(h, dense_weights, dense_bias) |> identity
+    e = cross_entropy_loss(y_hat, train_y)
 
     return topological_sort(e), l5
 end
