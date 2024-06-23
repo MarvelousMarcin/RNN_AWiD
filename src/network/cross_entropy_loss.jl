@@ -1,12 +1,6 @@
 cross_entropy_loss(y_hat::GraphNode, y::GraphNode) = BroadcastedOperator(cross_entropy_loss, y_hat, y)
 forward(::BroadcastedOperator{typeof(cross_entropy_loss)}, y_hat, y) =
     let
-		global good_clasiff
-        global all_clasiff
-        all_clasiff += 1
-        if argmax(y_hat) == argmax(y)
-            good_clasiff += 1
-        end
         y_hat = y_hat .- maximum(y_hat)
         y_hat = exp.(y_hat) ./ sum(exp.(y_hat))
         loss = sum(log.(y_hat) .* y) * -1.0
