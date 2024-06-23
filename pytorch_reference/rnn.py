@@ -1,87 +1,90 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torchvision import datasets, transforms
-from torch.utils.data import DataLoader, TensorDataset
-import numpy as np
-from tqdm import tqdm
+import torchvision
+import torchvision.transforms as transforms
 import time
 import psutil
+import os
 
-transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
-train_dataset = datasets.MNIST('.', train=True, download=True, transform=transform)
-test_dataset = datasets.MNIST('.', train=False, download=True, transform=transform)
+# Function to get memory usage
+def get_memory_usage():
+    process = psutil.Process(os.getpid())
+    return process.memory_info().rss / 1024 ** 2  # Memory in MB
 
-def loader(dataset, batch_size=1):
-    x = dataset.data.view(-1, 28 * 28).float() / 255.0
-    y = dataset.targets
-    dataset = TensorDataset(x, y)
-    return DataLoader(dataset, batch_size=batch_size, shuffle=True)
+# Data loading and preprocessing
+transform = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize((0.1307,), (0.3081,))
+])
 
-train_loader = loader(train_dataset, batch_size=100)
-test_loader = loader(test_dataset, batch_size=len(test_dataset))
+train_dataset = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=transform)
+test_dataset = torchvision.datasets.MNIST(root='./data', train=False, download=True, transform=transform)
 
+train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=100, shuffle=True)
+test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=len(test_dataset), shuffle=False)
+
+# Model definition
 class RNNModel(nn.Module):
     def __init__(self):
         super(RNNModel, self).__init__()
         self.rnn = nn.RNN(14 * 14, 64, batch_first=True)
         self.fc = nn.Linear(64, 10)
-    
+
     def forward(self, x):
-        x = x.view(-1, 4, 14 * 14)
-        h0 = torch.zeros(1, x.size(0), 64).to(x.device)
-        out, _ = self.rnn(x, h0)
-        out = self.fc(out[:, -1, :])
-        return out
+        x, _ = self.rnn(x)
+        x = self.fc(x[:, -1, :])
+        return x
 
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-model = RNNModel().to(device)
+net = RNNModel()
 
+# Loss and optimizer
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(model.parameters(), lr=15e-3)
+optimizer = optim.SGD(net.parameters(), lr=15e-3)
 
-def loss_and_accuracy(model, loader):
+# Function to calculate loss and accuracy
+def loss_and_accuracy(model, data_loader):
     model.eval()
-    if device == 'cuda':
-        torch.cuda.reset_max_memory_allocated(device)
     with torch.no_grad():
-        for x, y in loader:
-            x, y = x.to(device), y.to(device)
-            outputs = model(x)
-            loss = criterion(outputs, y)
-            _, predicted = torch.max(outputs, 1)
-            accuracy = (predicted == y).float().mean().item()
-    memory_usage = torch.cuda.max_memory_allocated(device) if device == 'cuda' else psutil.Process().memory_info().rss
-    return loss.item(), accuracy * 100, memory_usage
+        for (x, y) in data_loader:
+            x = x.view(-1, 4, 196)  # Reshape for RNN
+            y_pred = model(x)
+            loss = criterion(y_pred, y)
+            acc = (y_pred.argmax(1) == y).float().mean().item() * 100
+    return loss.item(), round(acc, 2)
+
+# Training the model
+train_log = []
+settings = {
+    'eta': 15e-3,
+    'epochs': 5,
+}
 
 start_time = time.time()
-if device == 'cuda':
-    torch.cuda.reset_max_memory_allocated(device)
-train_memory_start = psutil.Process().memory_info().rss if device == 'cpu' else None
+start_memory = get_memory_usage()
 
-num_epochs = 5
-train_log = []
-
-for epoch in range(num_epochs):
-    model.train()
-    epoch_loss = 0
-    for x, y in tqdm(train_loader):
-        x, y = x.to(device), y.to(device)
+for epoch in range(settings['epochs']):
+    net.train()
+    for (x, y) in train_loader:
+        x = x.view(-1, 4, 196)  # Reshape for RNN
         optimizer.zero_grad()
-        outputs = model(x)
-        loss = criterion(outputs, y)
+        y_pred = net(x)
+        loss = criterion(y_pred, y)
         loss.backward()
         optimizer.step()
-        epoch_loss += loss.item()
 
-train_time = time.time() - start_time
-train_memory_end = psutil.Process().memory_info().rss if device == 'cpu' else torch.cuda.max_memory_allocated(device)
+    train_loss, train_acc = loss_and_accuracy(net, train_loader)
+    test_loss, test_acc = loss_and_accuracy(net, test_loader)
+    print(f'Epoch {epoch+1}, Train Accuracy: {train_acc}%, Test Accuracy: {test_acc}%')
+    train_log.append({'epoch': epoch + 1, 'train_loss': train_loss, 'train_acc': train_acc, 'test_loss': test_loss, 'test_acc': test_acc})
 
-train_loss, train_acc, _ = loss_and_accuracy(model, train_loader)
-test_loss, test_acc, test_memory = loss_and_accuracy(model, test_loader)
+end_time = time.time()
+end_memory = get_memory_usage()
 
-print(f'Total Training Time: {train_time:.2f}s')
-print(f'Total Training Memory: {(train_memory_end - train_memory_start)/1024**2:.2f}MB' if device == 'cpu' else f'Total Training Memory: {train_memory_end/1024**2:.2f}MB')
-print(f'Test Memory: {test_memory/1024**2:.2f}MB')
-print(f'Train Loss: {train_loss:.4f}, Train Accuracy: {train_acc:.2f}%')
-print(f'Test Loss: {test_loss:.4f}, Test Accuracy: {test_acc:.2f}%')
+print(f'Total training time: {end_time - start_time:.2f} seconds')
+print(f'Memory used: {end_memory - start_memory:.2f} MB')
+
+# Checking some predictions
+x1, y1 = next(iter(train_loader))
+x1 = x1.view(-1, 4, 196)
+y1_pred = net(x1)
