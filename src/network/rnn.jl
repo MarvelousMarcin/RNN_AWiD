@@ -8,6 +8,8 @@ include("./rnn_custom.jl")
 using Plots
 import Statistics: mean
 
+using JET
+
 
 function onecold(y::Any)
     return map(argmax, eachcol(y)) .- 1 
@@ -36,8 +38,9 @@ function train(r::RNN_CUST, x::Any, y::Any)
     x_t3 = Variable(x[393:588, 1]) 
     x_t4 = Variable(x[589:end, 1]) 
 
-    graph, y_hat = build_graph(x_t1, x_t2, x_t3, x_t4, train_y, r.rnn_weights, r.rnn_recurrent_weights, r.rnn_bias, r.dense_weights, r.dense_bias, r.arch);
-
+    graph, ŷ = build_graph(x_t1, x_t2, x_t3, x_t4, train_y, r.rnn_weights, r.rnn_recurrent_weights, r.rnn_bias, r.dense_weights, r.dense_bias, r.arch);
+    global grads = init_gradients(x_t1, r.rnn_weights, r.rnn_recurrent_weights)
+    
     @time for epoch in 1:r.epochs
         epoch_loss::Float64 = 0.0
         iter_loss::Float64 = 0.0
@@ -49,16 +52,17 @@ function train(r::RNN_CUST, x::Any, y::Any)
         num_of_samples = size(x, 2)
 
         for j in 2:num_of_samples
-            
+
+            reset_gradients!(grads)
+
             loss = forward!(graph)
 
             epoch_loss += loss
             iter_loss += loss
             
-            acc = accuracy_calculation(train_y, y_hat)
+            acc = accuracy_calculation(train_y, ŷ)
             iter_accuracy += acc
             epoch_accuracy += acc
-
             backward!(graph)
 
             if j % r.batch_size == 0
@@ -86,9 +90,7 @@ function train(r::RNN_CUST, x::Any, y::Any)
 
     plt = plot(global_accuracy, label="Accuracy", xlabel="Iteration", ylabel="Accuracy")
     savefig(plt, "./images/accuracy.png")
-
 end
-
 
 function test(r::RNN_CUST,x, y)
 	num_of_samples = size(x, 2)
