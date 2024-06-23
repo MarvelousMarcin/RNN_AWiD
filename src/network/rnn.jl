@@ -53,8 +53,6 @@ function train(r::RNN_CUST, x::Any, y::Any)
 
         for j in 2:num_of_samples
 
-            reset_gradients!(grads)
-
             loss = forward!(graph)
 
             epoch_loss += loss
