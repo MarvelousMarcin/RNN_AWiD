@@ -39,12 +39,12 @@ function train(r::RNN_CUST, x::Any, y::Any)
     graph, y_hat = build_graph(x_t1, x_t2, x_t3, x_t4, train_y, r.rnn_weights, r.rnn_recurrent_weights, r.rnn_bias, r.dense_weights, r.dense_bias, r.arch);
 
     @time for epoch in 1:r.epochs
-        epoch_loss = 0.0
-        iter_loss = 0.0
+        epoch_loss::Float64 = 0.0
+        iter_loss::Float64 = 0.0
 
-        acc = 0.0
-        epoch_accuracy = 0.0
-        iter_accuracy = 0.0
+        acc::Float64 = 0.0
+        epoch_accuracy::Float64 = 0.0
+        iter_accuracy::Float64 = 0.0
 
         num_of_samples = size(x, 2)
 
