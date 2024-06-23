@@ -10,7 +10,6 @@ import Statistics: mean
 
 using JET
 
-
 function onecold(y::Any)
     return map(argmax, eachcol(y)) .- 1 
 end
@@ -38,7 +37,7 @@ function train(r::RNN_CUST, x::Any, y::Any)
     x_t3 = Variable(x[393:588, 1]) 
     x_t4 = Variable(x[589:end, 1]) 
 
-    graph, ŷ = build_graph(x_t1, x_t2, x_t3, x_t4, train_y, r.rnn_weights, r.rnn_recurrent_weights, r.rnn_bias, r.dense_weights, r.dense_bias, r.arch);
+    graph, ŷ = build_graph(x_t1, x_t2, x_t3, x_t4, train_y, r.rnn_weights, r.rnn_recurrent_weights, r.rnn_bias, r.dense_weights, r.dense_bias);
     global grads = init_gradients(x_t1, r.rnn_weights, r.rnn_recurrent_weights)
     
     @time for epoch in 1:r.epochs
@@ -100,7 +99,7 @@ function test(r::RNN_CUST,x, y)
     x_t3 = Variable(x[393:588, 1]) 
     x_t4 = Variable(x[589:end, 1]) 
 
-    graph, y_hat = build_graph(x_t1, x_t2, x_t3, x_t4, test_y, r.rnn_weights, r.rnn_recurrent_weights, r.rnn_bias, r.dense_weights, r.dense_bias, r.arch);
+    graph, y_hat = build_graph(x_t1, x_t2, x_t3, x_t4, test_y, r.rnn_weights, r.rnn_recurrent_weights, r.rnn_bias, r.dense_weights, r.dense_bias);
     
 	for j=2:num_of_samples
 		forward!(graph)
