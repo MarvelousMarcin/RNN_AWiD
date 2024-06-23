@@ -37,9 +37,10 @@ function train(r::RNN_CUST, x::Any, y::Any)
     x_t2 = Variable(x[197:392, 1]) 
     x_t3 = Variable(x[393:588, 1]) 
     x_t4 = Variable(x[589:end, 1]) 
-
+    input_size = 14*14
+    output_size = 64
     graph, ŷ = build_graph(x_t1, x_t2, x_t3, x_t4, train_y, r.rnn_weights, r.rnn_recurrent_weights, r.rnn_bias, r.dense_weights, r.dense_bias, r.arch);
-    global grads = init_gradients(x_t1, r.rnn_weights, r.rnn_recurrent_weights)
+    global grads = init_gradients(input_size, output_size)
     
     @time for epoch in 1:r.epochs
         epoch_loss::Float64 = 0.0
